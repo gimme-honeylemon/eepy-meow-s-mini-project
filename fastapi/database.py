@@ -234,6 +234,14 @@ async def update_existing_tables():
         if 'total_price' not in existing_column_names:
             await database.execute("ALTER TABLE user_cart ADD COLUMN total_price DECIMAL(10,2) GENERATED ALWAYS AS (item_price * quantity) STORED")
             print("✅ Added 'total_price' column to user_cart table")
+        else:
+            # Update existing total_price column to use the correct calculation
+            try:
+                await database.execute("ALTER TABLE user_cart DROP COLUMN total_price")
+                await database.execute("ALTER TABLE user_cart ADD COLUMN total_price DECIMAL(10,2) GENERATED ALWAYS AS (item_price * quantity) STORED")
+                print("✅ Updated 'total_price' column calculation")
+            except Exception as e:
+                print(f"⚠️ Could not update total_price column: {e}")
         
         # Update unique constraint if needed
         try:

@@ -88,10 +88,10 @@ async def add_to_cart(item: CartItem, user: dict = Depends(verify_token)):
         )
         
         if existing_item:
-            # Update quantity
+            # Update quantity and price
             update_query = """
             UPDATE user_cart 
-            SET quantity = quantity + :quantity, updated_at = CURRENT_TIMESTAMP
+            SET quantity = quantity + :quantity, item_price = :item_price, updated_at = CURRENT_TIMESTAMP
             WHERE user_id = :user_id AND item_id = :item_id AND size = :size AND temperature = :temperature AND special_instructions = :special_instructions
             """
             await database.execute(
@@ -100,6 +100,7 @@ async def add_to_cart(item: CartItem, user: dict = Depends(verify_token)):
                     "user_id": user_id, 
                     "item_id": item.item_id, 
                     "quantity": item.quantity,
+                    "item_price": item.item_price,
                     "size": item.size,
                     "temperature": item.temperature,
                     "special_instructions": item.special_instructions

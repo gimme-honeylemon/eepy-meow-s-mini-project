@@ -51,6 +51,7 @@ export default function CartPage() {
 
       try {
         const res = await api.get("/cart");
+        console.log("Cart API response:", res.data);
         
         // Transform the cart items
         const cartData = res.data.map(item => ({
@@ -66,6 +67,7 @@ export default function CartPage() {
           total_price: parseFloat(item.total_price) || (parseFloat(item.item_price) * item.quantity)
         }));
         
+        console.log("Transformed cart data:", cartData);
         setCartItems(cartData);
       } catch (err) {
         console.error("❌ Error fetching cart:", err);
@@ -210,7 +212,12 @@ export default function CartPage() {
   };
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.total_price, 0);
+  
+  // Debug logging
+  console.log("Cart items for total calculation:", cartItems);
+  console.log("Total items:", totalItems);
+  console.log("Total price:", totalPrice);
 
   // Loading state
   if (loading) {
@@ -519,6 +526,12 @@ export default function CartPage() {
                       {item.special_instructions && (
                         <Typography variant="caption" sx={{ color: "#666", display: 'block', fontStyle: 'italic' }}>
                           "{item.special_instructions}"
+                        </Typography>
+                      )}
+                      {/* Show size-based pricing info */}
+                      {item.size !== 'regular' && (
+                        <Typography variant="caption" sx={{ color: "#2E4265", display: 'block', fontSize: '0.7rem' }}>
+                          {item.size} size pricing applied
                         </Typography>
                       )}
                     </Box>

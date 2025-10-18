@@ -43,6 +43,11 @@ async def get_user_by_email(email: str, password_hash: str):
     query = "SELECT * FROM users WHERE email = :email and password_hash = :password_hash"
     return await database.fetch_one(query=query, values={"email": email, "password_hash": password_hash})
 
+# Function to select a user by email only (for login verification)
+async def get_user_by_email_only(email: str):
+    query = "SELECT * FROM users WHERE email = :email"
+    return await database.fetch_one(query=query, values={"email": email})
+
 # Function to update a user in the users table
 async def update_user(user_id: int, username: str, password_hash: str, email: str):
     query = """

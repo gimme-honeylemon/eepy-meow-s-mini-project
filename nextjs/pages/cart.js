@@ -59,7 +59,11 @@ export default function CartPage() {
           name: item.item_name,
           price: parseFloat(item.item_price),
           quantity: item.quantity,
-          image: item.image_url || `/default-coffee.png`
+          image: item.image_url || `/default-coffee.png`,
+          size: item.size || 'regular',
+          temperature: item.temperature || 'hot',
+          special_instructions: item.special_instructions || '',
+          total_price: parseFloat(item.total_price) || (parseFloat(item.item_price) * item.quantity)
         }));
         
         setCartItems(cartData);
@@ -507,6 +511,17 @@ export default function CartPage() {
                     >
                       ${item.price.toFixed(2)} each
                     </Typography>
+                    {/* Customization Details */}
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" sx={{ color: "#2E4265", fontWeight: 'bold' }}>
+                        {item.size} • {item.temperature}
+                      </Typography>
+                      {item.special_instructions && (
+                        <Typography variant="caption" sx={{ color: "#666", display: 'block', fontStyle: 'italic' }}>
+                          "{item.special_instructions}"
+                        </Typography>
+                      )}
+                    </Box>
                   </Grid>
 
                   {/* Price */}
@@ -520,7 +535,7 @@ export default function CartPage() {
                         textAlign: 'center'
                       }}
                     >
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ${item.total_price.toFixed(2)}
                     </Typography>
                   </Grid>
 

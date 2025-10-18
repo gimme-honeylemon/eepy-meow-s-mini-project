@@ -31,6 +31,12 @@ class CartItem(BaseModel):
     item_price: float
     quantity: int
     image_url: str
+    size: str = 'regular'
+    temperature: str = 'hot'
+    special_instructions: str = ''
+
+class CartUpdateRequest(BaseModel):
+    quantity: int
 
 # Simple token verification (replace with proper JWT later)
 async def verify_token(authorization: str = Header(...)):
@@ -65,29 +71,45 @@ async def add_to_cart(item: CartItem, user: dict = Depends(verify_token)):
     user_id = user.get("user_id")
     
     try:
-        # Check if item already in cart
-        check_query = "SELECT * FROM user_cart WHERE user_id = :user_id AND item_id = :item_id"
+        # Check if item already in cart with same customization
+        check_query = """
+        SELECT * FROM user_cart 
+        WHERE user_id = :user_id AND item_id = :item_id AND size = :size AND temperature = :temperature AND special_instructions = :special_instructions
+        """
         existing_item = await database.fetch_one(
             check_query, 
-            {"user_id": user_id, "item_id": item.item_id}
+            {
+                "user_id": user_id, 
+                "item_id": item.item_id,
+                "size": item.size,
+                "temperature": item.temperature,
+                "special_instructions": item.special_instructions
+            }
         )
         
         if existing_item:
             # Update quantity
             update_query = """
             UPDATE user_cart 
-            SET quantity = quantity + :quantity 
-            WHERE user_id = :user_id AND item_id = :item_id
+            SET quantity = quantity + :quantity, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = :user_id AND item_id = :item_id AND size = :size AND temperature = :temperature AND special_instructions = :special_instructions
             """
             await database.execute(
                 update_query,
-                {"user_id": user_id, "item_id": item.item_id, "quantity": item.quantity}
+                {
+                    "user_id": user_id, 
+                    "item_id": item.item_id, 
+                    "quantity": item.quantity,
+                    "size": item.size,
+                    "temperature": item.temperature,
+                    "special_instructions": item.special_instructions
+                }
             )
         else:
             # Insert new item
             insert_query = """
-            INSERT INTO user_cart (user_id, item_id, item_name, item_price, quantity)
-            VALUES (:user_id, :item_id, :item_name, :item_price, :quantity)
+            INSERT INTO user_cart (user_id, item_id, item_name, item_price, quantity, size, temperature, special_instructions)
+            VALUES (:user_id, :item_id, :item_name, :item_price, :quantity, :size, :temperature, :special_instructions)
             """
             await database.execute(
                 insert_query,
@@ -96,7 +118,10 @@ async def add_to_cart(item: CartItem, user: dict = Depends(verify_token)):
                     "item_id": item.item_id,
                     "item_name": item.item_name,
                     "item_price": item.item_price,
-                    "quantity": item.quantity
+                    "quantity": item.quantity,
+                    "size": item.size,
+                    "temperature": item.temperature,
+                    "special_instructions": item.special_instructions
                 }
             )
         
@@ -140,8 +165,9 @@ async def remove_from_cart(item_id: int, user: dict = Depends(verify_token)):
 
 # Update cart quantity
 @router.put("/cart/{item_id}")
-async def update_cart_quantity(item_id: int, quantity: int, user: dict = Depends(verify_token)):
+async def update_cart_quantity(item_id: int, request: CartUpdateRequest, user: dict = Depends(verify_token)):
     user_id = user.get("user_id")
+    quantity = request.quantity
     
     try:
         if quantity <= 0:
@@ -241,21 +267,3 @@ async def get_my_orders(user: dict = Depends(verify_token)):
         print(f"Error fetching orders: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch orders")
 
-
-# In your orders.py - update the verify_token function
-async def verify_token(authorization: str = Header(...)):
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-    
-    token = authorization.replace("Bearer ", "")
-    
-    print(f"Received token: {token}")
-    
-    # Simple token verification - use the token directly as user_id for testing
-    try:
-        user_id = int(token) if token.isdigit() else 1
-        print(f"Extracted user_id: {user_id}")
-        return {"user_id": user_id}
-    except Exception as e:
-        print(f"Token verification error: {e}")
-        raise HTTPException(status_code=401, detail="Invalid token")

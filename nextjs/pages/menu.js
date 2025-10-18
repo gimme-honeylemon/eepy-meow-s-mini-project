@@ -63,6 +63,11 @@ export default function MenuPage() {
           items = res.data.items; // If nested under items property
         }
         
+        // Ensure items is an array
+        if (!Array.isArray(items)) {
+          items = [];
+        }
+        
         console.log("Processed items:", items);
         
         if (!items || !Array.isArray(items)) {
@@ -192,7 +197,7 @@ export default function MenuPage() {
     setTotalQuantity(updated);
   };
 
-  const handleAddToCart = async (item, quantity) => {
+  const handleAddToCart = async (item, quantity, customization = {}) => {
     if (!token) {
       setSnackbar({
         open: true,
@@ -212,17 +217,33 @@ export default function MenuPage() {
     }
 
     try {
+      // Calculate price based on size
+      const sizeMultipliers = {
+        'small': 0.8,
+        'regular': 1.0,
+        'large': 1.3,
+        'extra-large': 1.6
+      };
+      const adjustedPrice = item.price * (sizeMultipliers[customization.size] || 1.0);
+
       await api.post("/cart/add", {
         item_id: item.item_id,
         item_name: item.item_name,
-        item_price: item.price,
+        item_price: adjustedPrice,
         quantity: quantity,
-        image_url: item.image_url
+        image_url: item.image_url,
+        size: customization.size || 'regular',
+        temperature: customization.temperature || 'hot',
+        special_instructions: customization.specialInstructions || ''
       });
+
+      const customizationText = customization.size !== 'regular' || customization.temperature !== 'hot' || customization.specialInstructions 
+        ? ` (${customization.size}, ${customization.temperature}${customization.specialInstructions ? ', ' + customization.specialInstructions : ''})`
+        : '';
 
       setSnackbar({
         open: true,
-        message: `${quantity} ${item.item_name}(s) added to cart!`,
+        message: `${quantity} ${item.item_name}${customizationText} added to cart!`,
         severity: "success",
       });
 
